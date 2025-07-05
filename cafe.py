@@ -1,6 +1,6 @@
 import pygame
 
-cafe_background = pygame.image.load("images/cafe.png")
+cafe_background = pygame.image.load("images/cafe/cafe.png")
 
 def run(screen):
     font = pygame.font.SysFont(None, 40)

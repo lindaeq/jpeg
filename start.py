@@ -1,11 +1,19 @@
 import pygame
+import sys
 
-# images
-background = pygame.image.load("images/background.png")
+pygame.init()
+pygame.font.init()  # Initialize the font module
+
+# Screen setup
+SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Start Screen")
+
+# Load images
+start_background = pygame.image.load("images/start/background.png")
 
 def run(screen):
     font = pygame.font.SysFont(None, 48)
-
     button_font = pygame.font.SysFont(None, 36)
     clock = pygame.time.Clock()
 
@@ -26,8 +34,9 @@ def run(screen):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 clicked = True
 
-        # Fill screen
+        # Fill screen and draw background
         screen.fill((200, 230, 255))
+        screen.blit(start_background, (0, 0))
 
         # Draw button
         if button_rect.collidepoint(mouse_pos):
@@ -37,5 +46,15 @@ def run(screen):
         else:
             pygame.draw.rect(screen, button_color, button_rect)
 
+        # Draw button text centered
+        text_rect = button_text.get_rect(center=button_rect.center)
+        screen.blit(button_text, text_rect)
+
         pygame.display.flip()
         clock.tick(60)
+
+if __name__ == "__main__":
+    result = run(screen)
+    print("Returned:", result)
+    pygame.quit()
+    sys.exit()
