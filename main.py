@@ -1,20 +1,26 @@
 import pygame
-from pygame.locals import *
+from start import run as run_start
+from cafe import run as run_cafe
+from coffee import run as run_coffee
+from trash import run as run_trash
 
 pygame.init()
-screen = pygame.display.set_mode((640, 480))
-pygame.display.set_caption("Event Logger")
+screen = pygame.display.set_mode((1000, 600))
+pygame.display.set_caption("Bubble Tea Game")
 
+current_screen = "start"
 running = True
 
 while running:
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            running = False
-        else:
-            print(event)  # Python 3 requires parentheses for print
-
-    screen.fill((120, 120, 120))
-    pygame.display.flip()
+    if current_screen == "start":
+        current_screen = run_start(screen)
+    elif current_screen == "cafe":
+        current_screen = run_cafe(screen)
+    elif current_screen == "coffee":
+        current_screen = run_coffee(screen)
+    elif current_screen == "trash":
+        current_screen = run_trash(screen)
+    elif current_screen == "quit":
+        running = False
 
 pygame.quit()
