@@ -1,10 +1,10 @@
 import pygame
 
-cafe_background = pygame.image.load("images/cafe/cafe.png")
-
 def run(screen):
+    # Load background image
+    background = pygame.image.load("images/cafe/cafe.png").convert()
+    
     font = pygame.font.SysFont(None, 40)
-    text = font.render("CAFE: Press C for coffee, T for trash", True, (0, 0, 0))
     clock = pygame.time.Clock()
 
     while True:
@@ -16,9 +16,17 @@ def run(screen):
                     return "coffee"
                 if event.key == pygame.K_t:
                     return "trash"
+                if event.key == pygame.K_k:
+                    return "click"
+                if event.key == pygame.K_ESCAPE:
+                    return "start"
 
-        screen.blit(cafe_background, (0,0))
-        
+        # Draw background
+        screen.blit(background, (0, 0))
+
+        # Optional: show instruction text
+        text = font.render("Press C (Coffee), T (Trash), or K (Click). ESC to return.", True, (0, 0, 0))
+        screen.blit(text, (50, 30))
 
         pygame.display.flip()
         clock.tick(60)
