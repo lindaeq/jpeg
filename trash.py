@@ -7,12 +7,12 @@ pygame.font.init()
 pygame.mixer.init()
 
 # Load buzz sound
-buzz_sound = pygame.mixer.Sound("sounds/buzz.wav")  # <-- Added buzz.wav sound
+buzz_sound = pygame.mixer.Sound("sounds/buzz.wav")
 
 # Load assets
 trash_background = pygame.image.load("images/trash/trash_background.png")
 trash1_img = pygame.image.load("images/trash/trash1.png")
-trash2_img = pygame.image.load("images/trash/trash2.JPG")
+trash2_img = pygame.image.load("images/trash/trash2.png")
 trash3_img = pygame.image.load("images/trash/trash3.jpg")
 trash_icon_img = pygame.image.load("images/trash/trash_icon.png").convert_alpha()
 
@@ -30,17 +30,18 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 def run(screen, mouse_normal=None, mouse_clicked=None):
-    buzz_sound.play()  # <-- Play buzz.wav once when this screen starts
-
+    buzz_sound.play()
     pygame.mouse.set_visible(False)
-    font = pygame.font.SysFont(None, 40)
+    font = pygame.font.SysFont("fonts/pixel_2.ttf", 40)
+    pixel_font = pygame.font.Font("fonts/pixel_2.ttf", 50)
+    small_pixel_font = pygame.font.Font("fonts/pixel_2.ttf", 30)
+
     clock = pygame.time.Clock()
 
     trash_icon_rect = trash_icon_img.get_rect(topleft=(900, 20))
-    max_trash = game_state.raccoons_served + 2  # Dynamic max_trash based on game_state
     round_start_score = game_state.score
+    round_start_raccoons = game_state.raccoons_served  # ✅ NEW LINE
 
-    # Bin setup
     bin_width, bin_height = 175, 50
     screen_width, screen_height = screen.get_size()
     center_x = screen_width // 2
@@ -53,24 +54,26 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     trash_items = []
     dragging_item = None
 
-    button_font = pygame.font.SysFont(None, 50)
-    button_text = button_font.render("Back to Cafe", True, (255, 255, 255))
-    button_rect = pygame.Rect((screen_width // 2) - 100, 500, 200, 60)
-
     def brighten_image(surface):
         bright = surface.copy()
         bright.fill((30, 30, 30, 0), special_flags=pygame.BLEND_RGB_ADD)
         return bright
 
     while True:
+        raccoons_served_this_round = game_state.raccoons_served - round_start_raccoons  # ✅ NEW
+        max_trash = 2 + raccoons_served_this_round  # ✅ REPLACEMENT
+
         clicked = False
         released = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "quit"
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return "cafe"
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return "cafe"
+                if pieces_sorted_this_round == max_trash:
+                    return "cafe"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 clicked = True
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -88,7 +91,6 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
         active_trash_count = sum(1 for t in trash_items if not t.get("returning") and "remove_timer" not in t)
 
-        # Spawn new trash piece
         if clicked and trash_icon_rect.collidepoint(mouse_pos) and pieces_sorted_this_round + active_trash_count < max_trash and icon_clear:
             trash_type = random.choice(["trash1", "trash2", "trash3"])
             spawn_x, spawn_y = trash_icon_rect.centerx, trash_icon_rect.bottom + 10
@@ -101,11 +103,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             trash_items.append(new_trash)
             dragging_item = new_trash
 
-        # Dragging logic
         if dragging_item and dragging_item["dragging"]:
             dragging_item["rect"].center = mouse_pos
 
-        # Drop logic
         if released and dragging_item:
             t = dragging_item
             trash_type = t["type"]
@@ -123,7 +123,6 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 t["returning"] = True
             dragging_item = None
 
-        # Return animation for wrong drops
         for t in trash_items[:]:
             if t.get("returning"):
                 tx, ty = trash_icon_rect.center
@@ -145,22 +144,15 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
         trash_items[:] = [t for t in trash_items if not ("remove_timer" in t and now >= t["remove_timer"])]
 
-        # Back to Cafe button logic
-        if clicked and pieces_sorted_this_round == max_trash and button_rect.collidepoint(mouse_pos):
-            return "cafe"
-
-        # --- Draw section ---
+        # Draw everything
         screen.blit(trash_background, (0, 0))
 
-        # Draw score
         score_label = font.render(f"Points: {game_state.score}", True, (0, 0, 0))
-        screen.blit(score_label, (trash_icon_rect.x - 20, trash_icon_rect.bottom + 5))
+        screen.blit(score_label, (trash_icon_rect.x - 200, trash_icon_rect.bottom - 50))
 
-        # Draw trash icon image (with optional hover effect)
         icon_img = brighten_image(trash_icon_img) if trash_icon_rect.collidepoint(mouse_pos) else trash_icon_img
         screen.blit(icon_img, trash_icon_rect.topleft)
 
-        # Function for bin hover color
         def get_bin_color(bin_rect):
             if dragging_item and dragging_item["rect"].colliderect(bin_rect):
                 return (80, 80, 80)
@@ -172,25 +164,22 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         pygame.draw.rect(screen, get_bin_color(compost_bin), compost_bin)
         pygame.draw.rect(screen, get_bin_color(waste_bin), waste_bin)
 
-        # Draw trash items
         for t in trash_items:
             if "remove_timer" in t:
                 continue
             img = TRASH_IMAGES[t["type"]]
             screen.blit(img, t["rect"])
 
-        # Draw "Back to Cafe" button
         if pieces_sorted_this_round == max_trash:
-            pygame.draw.rect(screen, (0, 150, 0), button_rect)
-            screen.blit(button_text, button_text.get_rect(center=button_rect.center))
+            continue_text = small_pixel_font.render("press any key to return to cafe...", True, (255, 255, 255))
+            text_rect = continue_text.get_rect(center=(screen_width // 2, 540))
+            screen.blit(continue_text, text_rect)
 
-        # Custom mouse cursor
         if mouse_normal and mouse_clicked:
             screen.blit(mouse_clicked if mouse_pressed else mouse_normal, mouse_pos)
 
         pygame.display.flip()
         clock.tick(60)
-
 
 if __name__ == "__main__":
     result = run(screen)

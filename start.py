@@ -22,21 +22,8 @@ background = pygame.image.load("images/start/background.png").convert()
 background1 = pygame.image.load("images/start/background1.png").convert()
 
 def run(screen, mouse_normal, mouse_clicked):
-    font = pygame.font.SysFont(None, 48)  # You can still keep this if needed elsewhere
-    # Use pixel font for button text
     pixel_font = pygame.font.Font("fonts/pixel.ttf", 36)
     clock = pygame.time.Clock()
-
-    button_color = (180, 80, 80)
-    hover_color = (200, 100, 100)
-
-    # Button at bottom center with margin 40px
-    button_width, button_height = 200, 60
-    button_x = (SCREEN_WIDTH - button_width - 700)
-    button_y = SCREEN_HEIGHT - button_height - 40
-    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-
-    button_text = pixel_font.render("Go to Cafe", True, (255, 255, 255))
 
     cursor_offset_x = 0
     cursor_offset_y = 0
@@ -46,8 +33,10 @@ def run(screen, mouse_normal, mouse_clicked):
     current_frame = 0
     backgrounds = [background, background1]
 
+    # Centered horizontally, 50px lower than original button
+
     while True:
-        dt = clock.tick(60)  # milliseconds since last frame
+        dt = clock.tick(60)
         frame_timer += dt
 
         mouse_pos = pygame.mouse.get_pos()
@@ -56,30 +45,21 @@ def run(screen, mouse_normal, mouse_clicked):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "quit"
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return "quit"
+            if event.type == pygame.KEYDOWN:
+                return "cafe"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if button_rect.collidepoint(event.pos):
-                    return "cafe"
+                return "cafe"
 
-        # Switch background frame every frame_delay milliseconds
+        # Switch background frame
         if frame_timer >= frame_delay:
             current_frame = (current_frame + 1) % len(backgrounds)
             frame_timer = 0
 
-        # Draw current background frame
+        # Draw background
         screen.blit(backgrounds[current_frame], (0, 0))
 
-        # Draw button with hover effect
-        if button_rect.collidepoint(mouse_pos):
-            pygame.draw.rect(screen, hover_color, button_rect)
-        else:
-            pygame.draw.rect(screen, button_color, button_rect)
-
-        text_rect = button_text.get_rect(center=button_rect.center)
-        screen.blit(button_text, text_rect)
-
-        # Draw custom cursor on top
+        # Draw prompt text
+        # Custom mouse
         if mouse_pressed:
             screen.blit(mouse_clicked, (mouse_pos[0] - cursor_offset_x, mouse_pos[1] - cursor_offset_y))
         else:
