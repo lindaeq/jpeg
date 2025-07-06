@@ -6,15 +6,17 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
-# Load buzz sound
+# Load buzz sound and sparkle sound
 buzz_sound = pygame.mixer.Sound("sounds/buzz.wav")
+sparkle_sound = pygame.mixer.Sound("sounds/sparkle.mp3")  # ✅ NEW
 
 # Load assets
 trash_background = pygame.image.load("images/trash/trash_background.png")
 trash1_img = pygame.image.load("images/trash/trash1.png")
 trash2_img = pygame.image.load("images/trash/trash2.png")
-trash3_img = pygame.image.load("images/trash/trash3.jpg")
+trash3_img = pygame.image.load("images/trash/trash3.png")
 trash_icon_img = pygame.image.load("images/trash/trash_icon.png").convert_alpha()
+sparkle_img = pygame.image.load("images/trash/sparkle.png").convert_alpha()  # ✅ NEW
 
 TRASH_IMAGES = {
     "trash1": trash1_img,
@@ -40,7 +42,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
     trash_icon_rect = trash_icon_img.get_rect(topleft=(900, 20))
     round_start_score = game_state.score
-    round_start_raccoons = game_state.raccoons_served  # ✅ NEW LINE
+    round_start_raccoons = game_state.raccoons_served
 
     bin_width, bin_height = 175, 50
     screen_width, screen_height = screen.get_size()
@@ -53,6 +55,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
     trash_items = []
     dragging_item = None
+    sparkles = []  # ✅ Track sparkle effects
 
     def brighten_image(surface):
         bright = surface.copy()
@@ -60,8 +63,8 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         return bright
 
     while True:
-        raccoons_served_this_round = game_state.raccoons_served - round_start_raccoons  # ✅ NEW
-        max_trash = 2 + raccoons_served_this_round  # ✅ REPLACEMENT
+        raccoons_served_this_round = game_state.raccoons_served - round_start_raccoons
+        max_trash = 2 + raccoons_served_this_round
 
         clicked = False
         released = False
@@ -110,14 +113,21 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             t = dragging_item
             trash_type = t["type"]
             rect = t["rect"]
+
             correct = (
                 (trash_type == "trash1" and rect.colliderect(compost_bin)) or
                 (trash_type == "trash2" and rect.colliderect(recycle_bin)) or
                 (trash_type == "trash3" and rect.colliderect(waste_bin))
             )
+
             if correct:
                 trash_items.remove(t)
                 game_state.score += 1
+
+                # ✅ Add sparkle effect at bin
+                sparkle_pos = rect.center
+                sparkles.append({"pos": sparkle_pos, "end_time": pygame.time.get_ticks() + 1000})
+                sparkle_sound.play()
             else:
                 t["dragging"] = False
                 t["returning"] = True
@@ -143,11 +153,12 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 t["remove_timer"] = now + 50
 
         trash_items[:] = [t for t in trash_items if not ("remove_timer" in t and now >= t["remove_timer"])]
+        sparkles[:] = [s for s in sparkles if now < s["end_time"]]  # ✅ Remove expired sparkles
 
         # Draw everything
         screen.blit(trash_background, (0, 0))
 
-        score_label = font.render(f"Points: {game_state.score}", True, (0, 0, 0))
+        score_label = pixel_font.render(f"points: {game_state.score}", True, (0, 0, 0))
         screen.blit(score_label, (trash_icon_rect.x - 200, trash_icon_rect.bottom - 50))
 
         icon_img = brighten_image(trash_icon_img) if trash_icon_rect.collidepoint(mouse_pos) else trash_icon_img
@@ -169,6 +180,11 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 continue
             img = TRASH_IMAGES[t["type"]]
             screen.blit(img, t["rect"])
+
+        # ✅ Draw sparkles
+        for s in sparkles:
+            sparkle_rect = sparkle_img.get_rect(center=s["pos"])
+            screen.blit(sparkle_img, sparkle_rect)
 
         if pieces_sorted_this_round == max_trash:
             continue_text = small_pixel_font.render("press any key to return to cafe...", True, (255, 255, 255))
