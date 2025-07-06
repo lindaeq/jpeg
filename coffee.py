@@ -36,35 +36,40 @@ brew_length = brew_sound.get_length()
 # Font for counter
 font = pygame.font.SysFont(None, 36)
 
-def run(screen, coffee_served=0, coffee_icons=None):
+# Constants for coffee icon stack
+ICON_SCALE = 0.4
+ICON_MARGIN_BOTTOM = 15
+ICON_SPACING = 10
+
+def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_clicked=None):
     if coffee_icons is None:
         coffee_icons = []
 
     clock = pygame.time.Clock()
 
-    # Button positions
     button_x = 500
     button_y_start = 175
     button_spacing = 105
 
-    # Button rects
     place_cup_rect = button_place_cup_img.get_rect(topleft=(button_x, button_y_start))
     pour_rect = button_pour_img.get_rect(topleft=(button_x, button_y_start + button_spacing))
     serve_rect = button_serve_img.get_rect(topleft=(button_x, button_y_start + 2 * button_spacing))
 
-    # Exit button
     exit_button_pos = (860, 60)
     exit_button_rect = pygame.Rect(exit_button_pos, exit_button.get_size())
 
-    cup_stage = None  # None, "empty", "medium", "full"
+    cup_stage = None
     brewing = False
     brew_start_time = 0
 
-    full_cup_icon = pygame.transform.scale(cup_full, (40, 40))
+    animating_cup = False
+    anim_cup_pos = pygame.Vector2(209, 310)
+    anim_cup_target_x = 25
+    anim_cup_speed = 12
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
-        clicked = False
+        mouse_pressed = pygame.mouse.get_pressed()[0]  # ✅ use this for cursor image switching
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -72,28 +77,57 @@ def run(screen, coffee_served=0, coffee_icons=None):
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 return "cafe", coffee_served, coffee_icons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                clicked = True
+                if exit_button_rect.collidepoint(event.pos):
+                    return "cafe", coffee_served, coffee_icons
+                if place_cup_rect.collidepoint(event.pos) and cup_stage is None:
+                    cup_stage = "empty"
+                    click_sound.play()
+                elif pour_rect.collidepoint(event.pos) and cup_stage == "empty" and not brewing:
+                    click_sound.play()
+                    brew_sound.play()
+                    brewing = True
+                    brew_start_time = pygame.time.get_ticks()
+                elif serve_rect.collidepoint(event.pos) and cup_stage == "full" and not brewing and not animating_cup:
+                    click_sound.play()
+                    cup_stage = None
+                    coffee_served += 1
+                    animating_cup = True
+                    anim_cup_pos = pygame.Vector2(209, 310)
 
         screen.fill((210, 180, 140))
         screen.blit(background, (0, 0))
 
-        # Draw cup
-        if cup_stage == "empty":
-            screen.blit(cup_empty, (209, 310))
-        elif cup_stage == "medium":
-            screen.blit(cup_medium, (209, 310))
-        elif cup_stage == "full":
-            screen.blit(cup_full, (209, 310))
+        # Draw cup (either animating or static)
+        if animating_cup:
+            icon_height = cup_full.get_height() * ICON_SCALE
+            target_y = SCREEN_HEIGHT - ICON_MARGIN_BOTTOM - (icon_height + ICON_SPACING) * coffee_served
+            target_pos = pygame.Vector2(anim_cup_target_x, target_y)
 
-        # Exit button
+            direction = target_pos - anim_cup_pos
+            if direction.length() < anim_cup_speed:
+                anim_cup_pos = target_pos
+                animating_cup = False
+                coffee_icons.append((anim_cup_pos.x, anim_cup_pos.y))
+            else:
+                direction.scale_to_length(anim_cup_speed)
+                anim_cup_pos += direction
+
+            screen.blit(cup_full, anim_cup_pos)
+        else:
+            if cup_stage == "empty":
+                screen.blit(cup_empty, (209, 310))
+            elif cup_stage == "medium":
+                screen.blit(cup_medium, (209, 310))
+            elif cup_stage == "full":
+                screen.blit(cup_full, (209, 310))
+
+        # Draw exit button
         screen.blit(exit_button, exit_button_pos)
-        if exit_button_rect.collidepoint(mouse_pos) and clicked:
-            return "cafe", coffee_served, coffee_icons
 
-        # Button states
+        # Button logic
         place_cup_enabled = True
         pour_enabled = (cup_stage == "empty" and not brewing)
-        serve_enabled = (cup_stage == "full" and not brewing)
+        serve_enabled = (cup_stage == "full" and not brewing and not animating_cup)
 
         def draw_button(enabled_img, disabled_img, rect, enabled):
             if enabled:
@@ -110,25 +144,7 @@ def run(screen, coffee_served=0, coffee_icons=None):
         draw_button(button_pour_img, button_pour_disabled, pour_rect, pour_enabled)
         draw_button(button_serve_img, button_serve_disabled, serve_rect, serve_enabled)
 
-        if clicked:
-            if place_cup_rect.collidepoint(mouse_pos) and place_cup_enabled:
-                if cup_stage is None:
-                    cup_stage = "empty"
-                    click_sound.play()
-            elif pour_rect.collidepoint(mouse_pos) and pour_enabled:
-                click_sound.play()
-                brew_sound.play()
-                brewing = True
-                brew_start_time = pygame.time.get_ticks()
-            elif serve_rect.collidepoint(mouse_pos) and serve_enabled:
-                click_sound.play()
-                cup_stage = None
-                coffee_served += 1
-                icon_spacing = 45
-                icon_y = SCREEN_HEIGHT - 60
-                icon_x = 80 - (coffee_served * icon_spacing)
-                coffee_icons.append((icon_x, icon_y))
-
+        # Brewing logic
         if brewing:
             elapsed = (pygame.time.get_ticks() - brew_start_time) / 1000
             if elapsed >= 2 and cup_stage == "empty":
@@ -137,18 +153,39 @@ def run(screen, coffee_served=0, coffee_icons=None):
                 brewing = False
                 cup_stage = "full"
 
+        # Draw stacked icons
         for pos in coffee_icons:
-            screen.blit(full_cup_icon, pos)
+            scaled_cup = pygame.transform.smoothscale(
+                cup_full,
+                (int(cup_full.get_width() * ICON_SCALE), int(cup_full.get_height() * ICON_SCALE))
+            )
+            screen.blit(scaled_cup, pos)
 
         counter_text = font.render(f"Coffee: {coffee_served}", True, (0, 0, 0))
         screen.blit(counter_text, (90, SCREEN_HEIGHT - 30))
 
+        # ✅ Custom cursor draw (based on mouse_pressed)
+        if mouse_normal and mouse_clicked:
+            if mouse_pressed:
+                screen.blit(mouse_clicked, mouse_pos)
+            else:
+                screen.blit(mouse_normal, mouse_pos)
+
         pygame.display.flip()
         clock.tick(60)
 
-# For standalone testing
+def get_coffee_assets():
+    scaled_icon = pygame.transform.smoothscale(
+        cup_full,
+        (int(cup_full.get_width() * ICON_SCALE), int(cup_full.get_height() * ICON_SCALE))
+    )
+    font = pygame.font.SysFont(None, 36)
+    return scaled_icon, font
+
 if __name__ == "__main__":
-    result, _, _ = run(screen)
+    mouse_normal = None
+    mouse_clicked = None
+    result, _, _ = run(screen, mouse_normal, mouse_clicked)
     print("Returned:", result)
     pygame.quit()
     sys.exit()

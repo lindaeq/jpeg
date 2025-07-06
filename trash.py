@@ -23,7 +23,8 @@ for key in TRASH_IMAGES:
 SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-def run(screen):
+def run(screen, mouse_normal=None, mouse_clicked=None):
+    pygame.mouse.set_visible(False)
     font = pygame.font.SysFont(None, 40)
     clock = pygame.time.Clock()
 
@@ -36,7 +37,7 @@ def run(screen):
     bin_width, bin_height = 175, 50
     screen_width, screen_height = screen.get_size()
     center_x = screen_width // 2
-    center_y = screen_height // 2 - 80  # move up ~100px
+    center_y = screen_height // 2 - 80
 
     recycle_bin = pygame.Rect(center_x - bin_width // 2 + 20, center_y - bin_height // 2, bin_width, bin_height)
     compost_bin = pygame.Rect(recycle_bin.left - 150 - bin_width + 55, center_y - bin_height // 2, bin_width, bin_height)
@@ -50,7 +51,6 @@ def run(screen):
     button_rect = pygame.Rect((screen_width // 2) - 100, 500, 200, 60)
 
     while True:
-        mouse_pos = pygame.mouse.get_pos()
         clicked = False
         released = False
 
@@ -63,6 +63,9 @@ def run(screen):
                 clicked = True
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 released = True
+
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_pressed = pygame.mouse.get_pressed()[0]  # ✅ Custom cursor logic
 
         icon_clear = all(not t["rect"].colliderect(trash_icon) for t in trash_items)
         active_trash_count = sum(1 for t in trash_items if not t.get("returning") and "remove_timer" not in t)
@@ -132,24 +135,22 @@ def run(screen):
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topleft, trash_icon.bottomright, 2)
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topright, trash_icon.bottomleft, 2)
 
-        # Bin highlight on hover
+        # Bin highlight
         def get_bin_color(bin_rect):
             if dragging_item and dragging_item["rect"].colliderect(bin_rect):
-                return (80, 80, 80)  # lighter gray
-            return (0, 0, 0)  # default black
+                return (80, 80, 80)
+            return (0, 0, 0)
 
         pygame.draw.rect(screen, get_bin_color(recycle_bin), recycle_bin)
         pygame.draw.rect(screen, get_bin_color(compost_bin), compost_bin)
         pygame.draw.rect(screen, get_bin_color(waste_bin), waste_bin)
 
-        # Draw trash items last so they appear on top
         for t in trash_items:
             if "remove_timer" in t:
                 continue
             img = TRASH_IMAGES[t["type"]]
             screen.blit(img, t["rect"])
 
-        # Bin labels (shifted down by 20)
         screen.blit(font.render("Recycle", True, (0, 0, 0)),
                     (recycle_bin.centerx - 40, recycle_bin.bottom + 25))
         screen.blit(font.render("Compost", True, (0, 0, 0)),
@@ -157,10 +158,16 @@ def run(screen):
         screen.blit(font.render("Waste", True, (0, 0, 0)),
                     (waste_bin.centerx - 35, waste_bin.bottom + 25))
 
-        # Back to cafe button
         if sorted_count == max_trash:
             pygame.draw.rect(screen, (0, 150, 0), button_rect)
             screen.blit(button_text, button_text.get_rect(center=button_rect.center))
+
+        # ✅ Draw custom mouse cursor
+        if mouse_normal and mouse_clicked:
+            if mouse_pressed:
+                screen.blit(mouse_clicked, mouse_pos)
+            else:
+                screen.blit(mouse_normal, mouse_pos)
 
         pygame.display.flip()
         clock.tick(60)
