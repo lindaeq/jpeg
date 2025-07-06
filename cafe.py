@@ -12,6 +12,7 @@ pygame.font.init()
 pygame.mixer.init()
 
 click_sound = pygame.mixer.Sound("sounds/click.mp3")
+sparkle_sound = pygame.mixer.Sound("sounds/sparkle.mp3")
 # Load and play background jazz music ONCE
 
 raccoon_sound = pygame.mixer.Sound("sounds/raccoon_sound.mp3")
@@ -27,6 +28,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     raccoon_img = pygame.image.load("images/cafe/raccoon.png").convert_alpha()
     dialogue_img = pygame.image.load("images/cafe/dialogue.png").convert_alpha()
     full_coffee_img = pygame.image.load("images/cafe/cup_full.png").convert_alpha()
+    sparkle_img = pygame.image.load("images/cafe/sparkle.png").convert_alpha()  # Sparkle image loaded
 
     scale_factor = 0.5
     original_width = full_coffee_img.get_width()
@@ -76,6 +78,11 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     steam_frame_interval = 500  # ms between frames
     last_steam_switch = pygame.time.get_ticks()
     current_background = background1
+
+    # Sparkle effect variables
+    sparkle_active = False
+    sparkle_start_time = 0
+    sparkle_pos = (0, 0)
 
     pygame.mixer.music.load("sounds/jazz.wav")
     pygame.mixer.music.play(-1)  # Loop forever
@@ -137,6 +144,14 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                     if raccoon_rect.colliderect(coffee_rect):
                         coffee_delivered += 1
                         coffee_served -= 1
+
+                        # Start sparkle effect at center of raccoon, slightly adjusted
+                        sparkle_pos = (raccoon_rect.centerx - sparkle_img.get_width() // 2,
+                                       raccoon_rect.top - sparkle_img.get_height() // 2)
+                        sparkle_active = True
+                        sparkle_start_time = pygame.time.get_ticks()
+                        sparkle_sound.play()
+
                         dragged_coffee_pos = None
                         dragged_coffee_index = None
                     else:
@@ -249,6 +264,14 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 screen.blit(mouse_clicked, mouse_pos)
             else:
                 screen.blit(mouse_normal, mouse_pos)
+
+        # Draw sparkle ON TOP OF EVERYTHING for 1 second
+        if sparkle_active:
+            now = pygame.time.get_ticks()
+            if now - sparkle_start_time <= 1000:  # 1000 ms = 1 second
+                screen.blit(sparkle_img, sparkle_pos)
+            else:
+                sparkle_active = False
 
         pygame.display.flip()
         clock.tick(60)
