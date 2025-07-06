@@ -49,10 +49,12 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     if not hasattr(game_state, "raccoon_sliding_out"):
         game_state.raccoon_sliding_out = False
 
-    raccoon_x = -raccoon_img.get_width()
+    # UPDATED: Start 100px before middle, same target stopping point
+    raccoon_x = (SCREEN_WIDTH // 2) - 100
     raccoon_y = SCREEN_HEIGHT // 4 - 25
-    raccoon_target_x = SCREEN_WIDTH * 2 / 3 - raccoon_img.get_width() // 2 - 100
+    raccoon_target_x = SCREEN_WIDTH * 0.57 - raccoon_img.get_width() // 2
     raccoon_speed = 8
+
     raccoon_arrived = False
     dialogue_visible = False
     dialogue_timer_started = False
@@ -131,7 +133,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 if dragging_coffee:
                     dragging_coffee = False
                     raccoon_rect = raccoon_img.get_rect(topleft=(raccoon_x, raccoon_y))
-                    coffee_rect = full_cup_icon.get_rect(topleft=dragged_coffee_pos)
+                    coffee_rect = full_coffee_img.get_rect(topleft=dragged_coffee_pos)
                     if raccoon_rect.colliderect(coffee_rect):
                         coffee_delivered += 1
                         coffee_served -= 1
@@ -165,7 +167,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 coffee_served = 0
                 dragged_coffee_pos = None
                 dragged_coffee_index = None
-                raccoon_x = -raccoon_img.get_width()
+                raccoon_x = (SCREEN_WIDTH // 2) - 100  # Reset start pos again
                 dialogue_start_time = 0
 
         # Draw animated background (steam effect)
@@ -206,7 +208,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
         highlight_raccoon = False
         if dragging_coffee and dragged_coffee_pos is not None:
-            dragged_coffee_rect = full_cup_icon.get_rect(topleft=dragged_coffee_pos)
+            dragged_coffee_rect = full_coffee_img.get_rect(topleft=dragged_coffee_pos)
             if raccoon_rect.colliderect(dragged_coffee_rect):
                 highlight_raccoon = True
 

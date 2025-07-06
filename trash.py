@@ -4,6 +4,10 @@ import game_state
 
 pygame.init()
 pygame.font.init()
+pygame.mixer.init()
+
+# Load buzz sound
+buzz_sound = pygame.mixer.Sound("sounds/buzz.wav")  # <-- Added buzz.wav sound
 
 # Load assets
 trash_background = pygame.image.load("images/trash/trash_background.png")
@@ -26,6 +30,8 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 def run(screen, mouse_normal=None, mouse_clicked=None):
+    buzz_sound.play()  # <-- Play buzz.wav once when this screen starts
+
     pygame.mouse.set_visible(False)
     font = pygame.font.SysFont(None, 40)
     clock = pygame.time.Clock()
