@@ -11,6 +11,8 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
+# Load and play background jazz music ONCE
+
 raccoon_sound = pygame.mixer.Sound("sounds/raccoon_sound.mp3")
 
 pygame.mouse.set_visible(False)  # Hide system mouse cursor
@@ -71,6 +73,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     steam_frame_interval = 500  # ms between frames
     last_steam_switch = pygame.time.get_ticks()
     current_background = background1
+
+    pygame.mixer.music.load("sounds/jazz.wav")
+    pygame.mixer.music.play(-1)  # Loop forever
 
     while True:
         now = pygame.time.get_ticks()
