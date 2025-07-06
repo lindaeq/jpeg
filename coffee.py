@@ -21,6 +21,10 @@ cup_medium = pygame.image.load("images/coffee/cup_medium.png").convert_alpha()
 cup_full = pygame.image.load("images/coffee/cup_full.png").convert_alpha()
 exit_button = pygame.image.load("images/coffee/button.png").convert_alpha()
 
+# Pour animation frames
+coffee_pour_1 = pygame.image.load("images/coffee/coffee_pour.png").convert_alpha()
+coffee_pour_2 = pygame.image.load("images/coffee/coffee_pour1.png").convert_alpha()
+
 # Load button images (enabled and disabled versions)
 button_place_cup_img = pygame.image.load("images/coffee/button_place_cup.png").convert_alpha()
 button_pour_img = pygame.image.load("images/coffee/button_pour.png").convert_alpha()
@@ -68,11 +72,19 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
     brew_start_time = 0
 
     animating_cup = False
-    anim_cup_pos = pygame.Vector2(209, 310)
+    anim_cup_pos = pygame.Vector2(209, 300)  # Moved 10px higher here
     anim_cup_target_x = 25
     anim_cup_speed = 12
 
     serve_click_count = 0  # Track number of serve clicks
+
+    # For animation frame switching of coffee pour
+    current_pour_frame = coffee_pour_1
+    pour_frame_timer = 0
+    pour_frame_interval = 300  # milliseconds
+
+    # Position to draw the pour animation near the coffee machine
+    pour_pos = (290, 235)
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
@@ -96,6 +108,7 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                         brew_sound.play()
                         brewing = True
                         brew_start_time = pygame.time.get_ticks()
+                        pour_frame_timer = pygame.time.get_ticks()  # reset pour animation timer
                 elif serve_rect.collidepoint(event.pos) and cup_stage == "full" and not brewing and not animating_cup:
                     if serve_click_count < game_state.coffee_offer_number:
                         click_sound.play()
@@ -103,7 +116,7 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                         coffee_served += 1
                         serve_click_count += 1
                         animating_cup = True
-                        anim_cup_pos = pygame.Vector2(209, 310)
+                        anim_cup_pos = pygame.Vector2(209, 300)  # Also 10px higher here
 
         screen.fill((210, 180, 140))
         screen.blit(background, (0, 0))
@@ -126,11 +139,11 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
             screen.blit(cup_full, anim_cup_pos)
         else:
             if cup_stage == "empty":
-                screen.blit(cup_empty, (209, 310))
+                screen.blit(cup_empty, (209, 300))  # 10px higher
             elif cup_stage == "medium":
-                screen.blit(cup_medium, (209, 310))
+                screen.blit(cup_medium, (209, 300))  # 10px higher
             elif cup_stage == "full":
-                screen.blit(cup_full, (209, 310))
+                screen.blit(cup_full, (209, 300))  # 10px higher
 
         # Draw exit button
         screen.blit(exit_button, exit_button_pos)
@@ -166,6 +179,13 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                 brewing = False
                 cup_stage = "full"
 
+            # Animate pour frames
+            if pygame.time.get_ticks() - pour_frame_timer > pour_frame_interval:
+                current_pour_frame = coffee_pour_2 if current_pour_frame == coffee_pour_1 else coffee_pour_1
+                pour_frame_timer = pygame.time.get_ticks()
+
+            screen.blit(current_pour_frame, pour_pos)
+
         # Draw stacked icons
         for pos in coffee_icons:
             scaled_cup = pygame.transform.smoothscale(
@@ -173,7 +193,6 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                 (int(cup_full.get_width() * ICON_SCALE), int(cup_full.get_height() * ICON_SCALE))
             )
             screen.blit(scaled_cup, pos)
-
 
         # Custom cursor
         if mouse_normal and mouse_clicked:
