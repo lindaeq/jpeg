@@ -3,6 +3,7 @@ import random
 
 pygame.init()
 pygame.font.init()
+
 # Load assets
 trash_background = pygame.image.load("images/trash/trash_background.png")
 trash1_img = pygame.image.load("images/trash/trash1.jpg")
@@ -22,30 +23,28 @@ for key in TRASH_IMAGES:
 SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-
 def run(screen):
     font = pygame.font.SysFont(None, 40)
     clock = pygame.time.Clock()
 
     trash_icon = pygame.Rect(900, 20, 50, 50)
     score = 0
-    max_trash = 9  # total number of trash to be sorted
+    max_trash = 9
     sorted_count = 0
 
     # Bin setup
-    bin_width, bin_height = 100, 80
+    bin_width, bin_height = 175, 50
     screen_width, screen_height = screen.get_size()
     center_x = screen_width // 2
-    center_y = screen_height // 2 + 20
+    center_y = screen_height // 2 - 80  # move up ~100px
 
-    recycle_bin = pygame.Rect(center_x - bin_width // 2, center_y - bin_height // 2, bin_width, bin_height)
-    compost_bin = pygame.Rect(recycle_bin.left - 150 - bin_width, center_y - bin_height // 2, bin_width, bin_height)
-    waste_bin = pygame.Rect(recycle_bin.right + 150, center_y - bin_height // 2, bin_width, bin_height)
+    recycle_bin = pygame.Rect(center_x - bin_width // 2 + 20, center_y - bin_height // 2, bin_width, bin_height)
+    compost_bin = pygame.Rect(recycle_bin.left - 150 - bin_width + 55, center_y - bin_height // 2, bin_width, bin_height)
+    waste_bin = pygame.Rect(recycle_bin.right + 150 + 40 - 100, center_y - bin_height // 2, bin_width, bin_height)
 
     trash_items = []
     dragging_item = None
 
-    # Button to go back to cafe
     button_font = pygame.font.SysFont(None, 50)
     button_text = button_font.render("Back to Cafe", True, (255, 255, 255))
     button_rect = pygame.Rect((screen_width // 2) - 100, 500, 200, 60)
@@ -65,10 +64,11 @@ def run(screen):
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 released = True
 
-        # Create new trash when clicked on icon and total < max
-        if clicked and trash_icon.collidepoint(mouse_pos) and len(trash_items) + sorted_count < max_trash:
+        icon_clear = all(not t["rect"].colliderect(trash_icon) for t in trash_items)
+        active_trash_count = sum(1 for t in trash_items if not t.get("returning") and "remove_timer" not in t)
+
+        if clicked and trash_icon.collidepoint(mouse_pos) and active_trash_count + sorted_count < max_trash and icon_clear:
             trash_type = random.choice(["trash1", "trash2", "trash3"])
-            # Spawn slightly below the trash icon to avoid stacking
             spawn_x, spawn_y = trash_icon.centerx, trash_icon.bottom + 10
             new_trash = {
                 "rect": pygame.Rect(spawn_x - 25, spawn_y - 25, 50, 50),
@@ -79,23 +79,18 @@ def run(screen):
             trash_items.append(new_trash)
             dragging_item = new_trash
 
-
-        # Drag update
         if dragging_item and dragging_item["dragging"]:
             dragging_item["rect"].center = mouse_pos
 
-        # On release: check bins
         if released and dragging_item:
             t = dragging_item
             trash_type = t["type"]
             rect = t["rect"]
-
             correct = (
                 (trash_type == "trash1" and rect.colliderect(compost_bin)) or
                 (trash_type == "trash2" and rect.colliderect(recycle_bin)) or
                 (trash_type == "trash3" and rect.colliderect(waste_bin))
             )
-
             if correct:
                 trash_items.remove(t)
                 sorted_count += 1
@@ -105,7 +100,6 @@ def run(screen):
                 t["returning"] = True
             dragging_item = None
 
-        # Animate returning trash
         for t in trash_items[:]:
             if t["returning"]:
                 tx, ty = trash_icon.center
@@ -120,59 +114,56 @@ def run(screen):
                     t["rect"].centerx += int(speed * dx / dist)
                     t["rect"].centery += int(speed * dy / dist)
 
-        # Remove returned trash after delay
         now = pygame.time.get_ticks()
-        trash_items[:] = [
-            t for t in trash_items if not ("remove_timer" in t and now >= t["remove_timer"])
-        ]
+        trash_items[:] = [t for t in trash_items if not ("remove_timer" in t and now >= t["remove_timer"])]
 
-        # Handle click on Back to Cafe button
         if clicked and sorted_count == max_trash and button_rect.collidepoint(mouse_pos):
             return "cafe"
 
         # --- Draw ---
         screen.blit(trash_background, (0, 0))
-
-        # Instruction + point counter
         header = font.render("TRASH: Press ESC to return to Cafe", True, (0, 0, 0))
         screen.blit(header, (50, 20))
-
         score_label = font.render(f"Points: {score}", True, (0, 0, 0))
         screen.blit(score_label, (trash_icon.x - 20, trash_icon.bottom + 5))
-
-        # Draw trash items
-        for t in trash_items:
-            if "remove_timer" in t:
-                continue
-            img = TRASH_IMAGES[t["type"]]
-            screen.blit(img, t["rect"])
 
         # Trash icon
         pygame.draw.rect(screen, (100, 100, 100), trash_icon)
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topleft, trash_icon.bottomright, 2)
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topright, trash_icon.bottomleft, 2)
 
-        # Draw bins
-        pygame.draw.rect(screen, (0, 0, 255), recycle_bin)
-        pygame.draw.rect(screen, (0, 255, 0), compost_bin)
-        pygame.draw.rect(screen, (255, 0, 0), waste_bin)
+        # Bin highlight on hover
+        def get_bin_color(bin_rect):
+            if dragging_item and dragging_item["rect"].colliderect(bin_rect):
+                return (80, 80, 80)  # lighter gray
+            return (0, 0, 0)  # default black
 
-        # Bin labels
+        pygame.draw.rect(screen, get_bin_color(recycle_bin), recycle_bin)
+        pygame.draw.rect(screen, get_bin_color(compost_bin), compost_bin)
+        pygame.draw.rect(screen, get_bin_color(waste_bin), waste_bin)
+
+        # Draw trash items last so they appear on top
+        for t in trash_items:
+            if "remove_timer" in t:
+                continue
+            img = TRASH_IMAGES[t["type"]]
+            screen.blit(img, t["rect"])
+
+        # Bin labels (shifted down by 20)
         screen.blit(font.render("Recycle", True, (0, 0, 0)),
-                    (recycle_bin.centerx - 40, recycle_bin.bottom + 5))
+                    (recycle_bin.centerx - 40, recycle_bin.bottom + 25))
         screen.blit(font.render("Compost", True, (0, 0, 0)),
-                    (compost_bin.centerx - 45, compost_bin.bottom + 5))
+                    (compost_bin.centerx - 45, compost_bin.bottom + 25))
         screen.blit(font.render("Waste", True, (0, 0, 0)),
-                    (waste_bin.centerx - 35, waste_bin.bottom + 5))
+                    (waste_bin.centerx - 35, waste_bin.bottom + 25))
 
-        # Show "Back to Cafe" button
+        # Back to cafe button
         if sorted_count == max_trash:
             pygame.draw.rect(screen, (0, 150, 0), button_rect)
             screen.blit(button_text, button_text.get_rect(center=button_rect.center))
 
         pygame.display.flip()
         clock.tick(60)
-
 
 if __name__ == "__main__":
     result = run(screen)
