@@ -73,20 +73,37 @@ def run(screen):
                 dist = (dx**2 + dy**2)**0.5
 
                 if dist < 5:
-                    trash_items.remove(trash)  # Snap back into icon and disappear
+                    # Move it off-screen and schedule removal
+                    trash["rect"].x = -100
+                    trash["rect"].y = -100
+                    trash["remove_timer"] = pygame.time.get_ticks() + 100  # remove after 100ms
                 else:
                     speed = 15
                     trash["rect"].centerx += int(speed * dx / dist)
                     trash["rect"].centery += int(speed * dy / dist)
 
+        # Final cleanup of trash pieces whose remove_timer has expired
+        now = pygame.time.get_ticks()
+        trash_items[:] = [
+            trash for trash in trash_items
+            if not ("remove_timer" in trash and now >= trash["remove_timer"])
+        ]
+
         # Draw
         screen.fill((200, 200, 200))
         screen.blit(text, (50, 20))
 
-        # Trash icon
+        # Trash items
+        for trash in trash_items:
+            if "remove_timer" in trash:
+                continue  # Don't draw items scheduled for removal
+            pygame.draw.rect(screen, (120, 120, 120), trash["rect"])
+
+        # Draw trash icon *after* trash items so it stays on top
         pygame.draw.rect(screen, (100, 100, 100), trash_icon)
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topleft, trash_icon.bottomright, 2)
         pygame.draw.line(screen, (0, 0, 0), trash_icon.topright, trash_icon.bottomleft, 2)
+
 
         # Bins
         pygame.draw.rect(screen, (0, 255, 0), compost_bin)
@@ -100,10 +117,6 @@ def run(screen):
         screen.blit(compost_label, (compost_bin.x + 5, compost_bin.y + 25))
         screen.blit(recycle_label, (recycle_bin.x + 5, recycle_bin.y + 25))
         screen.blit(waste_label, (waste_bin.x + 5, waste_bin.y + 25))
-
-        # Trash items
-        for trash in trash_items:
-            pygame.draw.rect(screen, (120, 120, 120), trash["rect"])
 
         pygame.display.flip()
         clock.tick(60)

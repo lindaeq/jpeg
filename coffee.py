@@ -52,15 +52,15 @@ def run(screen):
         screen.fill((210, 180, 140))
         screen.blit(background, (0, 0))
         screen.blit(text, (50, 20))
-        screen.blit(coffee_machine, (50, 150))
+        screen.blit(coffee_machine, (200, 125))
 
         # Draw cup based on stage
         if cup_stage == "empty":
-            screen.blit(cup_empty, (130, 280))
+            screen.blit(cup_empty, (248, 320))
         elif cup_stage == "medium":
-            screen.blit(cup_medium, (130, 280))
+            screen.blit(cup_medium, (248, 320))
         elif cup_stage == "full":
-            screen.blit(cup_full, (130, 280))
+            screen.blit(cup_full, (248, 320))
 
         # Draw Fill button
         if button_rect.collidepoint(mouse_pos):
@@ -89,7 +89,7 @@ def run(screen):
         clock.tick(60)
 
 # Run for testing
-if __name__ == "__main__":
+if __name__ == "__main__": 
     result = run(screen)
     print("Returned:", result)
     pygame.quit()
