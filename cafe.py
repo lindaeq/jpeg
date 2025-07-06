@@ -11,6 +11,7 @@ pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
+click_sound = pygame.mixer.Sound("sounds/click.mp3")
 # Load and play background jazz music ONCE
 
 raccoon_sound = pygame.mixer.Sound("sounds/raccoon_sound.mp3")
@@ -95,9 +96,12 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 return "start"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if trash_rect.collidepoint(event.pos):
+                    click_sound.play()   # Play click sound on trash click
                     pygame.mixer.music.stop()
                     return "click"
+
                 elif coffee_button_rect.collidepoint(event.pos):
+                    click_sound.play()   # Play click sound on coffee button click
                     result, new_coffee_served, _ = coffee.run(
                         screen, coffee_served, [], mouse_normal, mouse_clicked
                     )
@@ -106,15 +110,17 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                     coffee_served = new_coffee_served
                     dragged_coffee_pos = None
                     dragged_coffee_index = None
+
                 else:
                     pile_rects = []
                     for i in range(coffee_served):
                         pos_x = coffee_start_x
                         pos_y = coffee_start_y - (coffee_icon_height + coffee_icon_spacing) * i - coffee_icon_height
-                        rect = full_cup_icon.get_rect(topleft=(pos_x, pos_y))
+                        rect = full_coffee_img.get_rect(topleft=(pos_x, pos_y))
                         pile_rects.append(rect)
                     for i, rect in enumerate(pile_rects):
                         if rect.collidepoint(event.pos) and coffee_served > 0:
+                            click_sound.play()  # Play click sound on coffee cup click
                             dragging_coffee = True
                             dragged_coffee_pos = (rect.x, rect.y)
                             drag_offset = (event.pos[0] - rect.x, event.pos[1] - rect.y)

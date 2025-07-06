@@ -97,21 +97,22 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                 return "cafe", coffee_served, coffee_icons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if exit_button_rect.collidepoint(event.pos):
+                    click_sound.play()  # Added click sound
                     return "cafe", coffee_served, coffee_icons
                 if place_cup_rect.collidepoint(event.pos) and cup_stage is None:
                     if serve_click_count < game_state.coffee_offer_number:
+                        click_sound.play()  # Added click sound
                         cup_stage = "empty"
-                        click_sound.play()
                 elif pour_rect.collidepoint(event.pos) and cup_stage == "empty" and not brewing:
                     if serve_click_count < game_state.coffee_offer_number:
-                        click_sound.play()
+                        click_sound.play()  # Added click sound
                         brew_sound.play()
                         brewing = True
                         brew_start_time = pygame.time.get_ticks()
                         pour_frame_timer = pygame.time.get_ticks()  # reset pour animation timer
                 elif serve_rect.collidepoint(event.pos) and cup_stage == "full" and not brewing and not animating_cup:
                     if serve_click_count < game_state.coffee_offer_number:
-                        click_sound.play()
+                        click_sound.play()  # Added click sound
                         cup_stage = None
                         coffee_served += 1
                         serve_click_count += 1
