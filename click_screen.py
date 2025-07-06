@@ -7,6 +7,7 @@ click_sound = pygame.mixer.Sound("sounds/click.mp3")
 trash_click_sound = pygame.mixer.Sound("sounds/trash_click.mp3")
 quack_sound = pygame.mixer.Sound("sounds/quack.mp3")
 
+trash_background = pygame.image.load("images/click_screen/trash_bag.png")
 # Load trash image
 trash_img = pygame.image.load("images/click_screen/trashbag.jpg")
 trash_img = pygame.transform.scale(trash_img, (30, 30))
@@ -43,7 +44,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]  # ✅ Correct cursor logic
+        mouse_pressed = pygame.mouse.get_pressed()[0]
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -67,12 +68,14 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         if trash_collected == num_trash:
             button_visible = True
 
-        screen.fill((200, 200, 250))
-        pygame.draw.rect(screen, (180, 180, 220), spawn_area, 2)
+        screen.blit(trash_background, (0, 0))
 
-        # Instructions
-        text = font.render("Click Trash! Press ESC to return", True, (0, 0, 0))
-        screen.blit(text, (100, 30))
+        # ✅ Removed rectangle box drawing
+        # pygame.draw.rect(screen, (180, 180, 220), spawn_area, 2)
+
+        # ✅ Removed instruction text
+        # text = font.render("Click Trash! Press ESC to return", True, (0, 0, 0))
+        # screen.blit(text, (100, 30))
 
         # Trash counter
         counter_text = small_font.render(f"Trash: {trash_collected}/{num_trash}", True, (0, 0, 0))

@@ -1,5 +1,6 @@
 import pygame
 import sys
+import game_state
 
 pygame.init()
 pygame.mixer.init()
@@ -45,6 +46,10 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
     if coffee_icons is None:
         coffee_icons = []
 
+    # Ensure coffee_offer_number is set in game_state
+    if not hasattr(game_state, "coffee_offer_number") or game_state.coffee_offer_number is None:
+        game_state.coffee_offer_number = 1
+
     clock = pygame.time.Clock()
 
     button_x = 500
@@ -67,9 +72,11 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
     anim_cup_target_x = 25
     anim_cup_speed = 12
 
+    serve_click_count = 0  # Track number of serve clicks
+
     while True:
         mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]  # ✅ use this for cursor image switching
+        mouse_pressed = pygame.mouse.get_pressed()[0]
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -80,19 +87,23 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
                 if exit_button_rect.collidepoint(event.pos):
                     return "cafe", coffee_served, coffee_icons
                 if place_cup_rect.collidepoint(event.pos) and cup_stage is None:
-                    cup_stage = "empty"
-                    click_sound.play()
+                    if serve_click_count < game_state.coffee_offer_number:
+                        cup_stage = "empty"
+                        click_sound.play()
                 elif pour_rect.collidepoint(event.pos) and cup_stage == "empty" and not brewing:
-                    click_sound.play()
-                    brew_sound.play()
-                    brewing = True
-                    brew_start_time = pygame.time.get_ticks()
+                    if serve_click_count < game_state.coffee_offer_number:
+                        click_sound.play()
+                        brew_sound.play()
+                        brewing = True
+                        brew_start_time = pygame.time.get_ticks()
                 elif serve_rect.collidepoint(event.pos) and cup_stage == "full" and not brewing and not animating_cup:
-                    click_sound.play()
-                    cup_stage = None
-                    coffee_served += 1
-                    animating_cup = True
-                    anim_cup_pos = pygame.Vector2(209, 310)
+                    if serve_click_count < game_state.coffee_offer_number:
+                        click_sound.play()
+                        cup_stage = None
+                        coffee_served += 1
+                        serve_click_count += 1
+                        animating_cup = True
+                        anim_cup_pos = pygame.Vector2(209, 310)
 
         screen.fill((210, 180, 140))
         screen.blit(background, (0, 0))
@@ -124,10 +135,12 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
         # Draw exit button
         screen.blit(exit_button, exit_button_pos)
 
-        # Button logic
-        place_cup_enabled = True
-        pour_enabled = (cup_stage == "empty" and not brewing)
-        serve_enabled = (cup_stage == "full" and not brewing and not animating_cup)
+        # Disable buttons if offer number reached
+        max_serves_reached = serve_click_count >= game_state.coffee_offer_number
+
+        place_cup_enabled = not max_serves_reached and cup_stage is None
+        pour_enabled = (cup_stage == "empty" and not brewing and not max_serves_reached)
+        serve_enabled = (cup_stage == "full" and not brewing and not animating_cup and not max_serves_reached)
 
         def draw_button(enabled_img, disabled_img, rect, enabled):
             if enabled:
@@ -161,10 +174,8 @@ def run(screen, coffee_served=0, coffee_icons=None, mouse_normal=None, mouse_cli
             )
             screen.blit(scaled_cup, pos)
 
-        counter_text = font.render(f"Coffee: {coffee_served}", True, (0, 0, 0))
-        screen.blit(counter_text, (90, SCREEN_HEIGHT - 30))
 
-        # ✅ Custom cursor draw (based on mouse_pressed)
+        # Custom cursor
         if mouse_normal and mouse_clicked:
             if mouse_pressed:
                 screen.blit(mouse_clicked, mouse_pos)

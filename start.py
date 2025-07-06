@@ -3,6 +3,11 @@ import sys
 
 pygame.init()
 pygame.font.init()
+pygame.mixer.init()
+
+# Load and play background jazz music ONCE
+pygame.mixer.music.load("sounds/jazz.wav")
+pygame.mixer.music.play(-1)  # Loop forever
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -29,7 +34,7 @@ def run(screen, mouse_normal, mouse_clicked):
 
     while True:
         mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]  # ← this replaces `clicked`
+        mouse_pressed = pygame.mouse.get_pressed()[0]
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

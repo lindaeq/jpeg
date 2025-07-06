@@ -1,45 +1,42 @@
 import pygame
-from start import run as run_start
-from cafe import run as run_cafe
-from coffee import run as run_coffee
-from trash import run as run_trash
-from click_screen import run as run_click
+import loading
+import start
+import click_screen
+import cafe
+import trash
+
+SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Raccoon Café")
 
 pygame.init()
-screen = pygame.display.set_mode((1000, 600))
-pygame.display.set_caption("Café Game")
+pygame.font.init()
+pygame.mouse.set_visible(False)
 
-# Load cursor images once
-try:
-    mouse_normal = pygame.image.load("images/mouse_normal.png").convert_alpha()
-    mouse_clicked = pygame.image.load("images/mouse_clicked.png").convert_alpha()
-except pygame.error as e:
-    print(f"Error loading cursor images: {e}")
-    pygame.quit()
-    exit()
+# Load custom cursors
+mouse_normal = pygame.image.load("images/mouse_normal.png").convert_alpha()
+mouse_clicked = pygame.image.load("images/mouse_clicked.png").convert_alpha()
 
-pygame.mouse.set_visible(False)  # Hide system cursor
+# Start with the loading screen
+current_screen = "loading"
 
-# Set initial screen
-current_screen = "start"
-running = True
+while True:
+    if current_screen == "loading":
+        current_screen = loading.run(screen)
 
-# Main game loop
-while running:
-    if current_screen == "start":
-        current_screen = run_start(screen, mouse_normal, mouse_clicked)
-    elif current_screen == "cafe":
-        current_screen = run_cafe(screen, mouse_normal, mouse_clicked)
-    elif current_screen == "coffee":
-        current_screen = run_coffee(screen, mouse_normal, mouse_clicked)
-    elif current_screen == "trash":
-        current_screen = run_trash(screen, mouse_normal, mouse_clicked)
+    elif current_screen == "start":
+        current_screen = start.run(screen, mouse_normal, mouse_clicked)
+
     elif current_screen == "click":
-        current_screen = run_click(screen, mouse_normal, mouse_clicked)
+        current_screen = click_screen.run(screen, mouse_normal, mouse_clicked)
+
+    elif current_screen == "cafe":
+        current_screen = cafe.run(screen, mouse_normal, mouse_clicked)
+
+    elif current_screen == "trash":
+        current_screen = trash.run(screen, mouse_normal, mouse_clicked)
+
     elif current_screen == "quit":
-        running = False
-    else:
-        print(f"Unknown screen: {current_screen}")
-        running = False
+        break
 
 pygame.quit()

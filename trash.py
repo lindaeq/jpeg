@@ -1,5 +1,6 @@
 import pygame
 import random
+import game_state
 
 pygame.init()
 pygame.font.init()
@@ -29,7 +30,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     clock = pygame.time.Clock()
 
     trash_icon = pygame.Rect(900, 20, 50, 50)
-    score = 0
+    # score = 0  ❌ Removed to avoid shadowing game_state.score
     max_trash = 9
     sorted_count = 0
 
@@ -67,7 +68,12 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         mouse_pos = pygame.mouse.get_pos()
         mouse_pressed = pygame.mouse.get_pressed()[0]  # ✅ Custom cursor logic
 
-        icon_clear = all(not t["rect"].colliderect(trash_icon) for t in trash_items)
+        # ✅ Relaxed icon_clear logic
+        icon_clear = all(
+            not t["rect"].colliderect(trash_icon) or t.get("returning") or "remove_timer" in t
+            for t in trash_items
+        )
+
         active_trash_count = sum(1 for t in trash_items if not t.get("returning") and "remove_timer" not in t)
 
         if clicked and trash_icon.collidepoint(mouse_pos) and active_trash_count + sorted_count < max_trash and icon_clear:
@@ -97,7 +103,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             if correct:
                 trash_items.remove(t)
                 sorted_count += 1
-                score += 1
+                game_state.score += 1
             else:
                 t["dragging"] = False
                 t["returning"] = True
@@ -117,7 +123,12 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                     t["rect"].centerx += int(speed * dx / dist)
                     t["rect"].centery += int(speed * dy / dist)
 
+        # ✅ Emergency cleanup for stuck trash
         now = pygame.time.get_ticks()
+        for t in trash_items:
+            if t.get("returning") and t["rect"].x < -80 and t["rect"].y < -80:
+                t["remove_timer"] = now + 50
+
         trash_items[:] = [t for t in trash_items if not ("remove_timer" in t and now >= t["remove_timer"])]
 
         if clicked and sorted_count == max_trash and button_rect.collidepoint(mouse_pos):
@@ -125,9 +136,8 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
         # --- Draw ---
         screen.blit(trash_background, (0, 0))
-        header = font.render("TRASH: Press ESC to return to Cafe", True, (0, 0, 0))
-        screen.blit(header, (50, 20))
-        score_label = font.render(f"Points: {score}", True, (0, 0, 0))
+
+        score_label = font.render(f"Points: {game_state.score}", True, (0, 0, 0))
         screen.blit(score_label, (trash_icon.x - 20, trash_icon.bottom + 5))
 
         # Trash icon
@@ -150,13 +160,6 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 continue
             img = TRASH_IMAGES[t["type"]]
             screen.blit(img, t["rect"])
-
-        screen.blit(font.render("Recycle", True, (0, 0, 0)),
-                    (recycle_bin.centerx - 40, recycle_bin.bottom + 25))
-        screen.blit(font.render("Compost", True, (0, 0, 0)),
-                    (compost_bin.centerx - 45, compost_bin.bottom + 25))
-        screen.blit(font.render("Waste", True, (0, 0, 0)),
-                    (waste_bin.centerx - 35, waste_bin.bottom + 25))
 
         if sorted_count == max_trash:
             pygame.draw.rect(screen, (0, 150, 0), button_rect)
