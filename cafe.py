@@ -39,7 +39,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     font = pygame.font.Font("fonts/pixel.ttf", 60)
     clock = pygame.time.Clock()
 
-    trash_rect = trash_can_img.get_rect(topleft=(0, (SCREEN_HEIGHT - trash_can_img.get_height()) // 2 - 25))
+    trash_rect = trash_can_img.get_rect(topleft=(7.5, (SCREEN_HEIGHT - trash_can_img.get_height()) // 2 - 28))
     coffee_button_pos = (675, SCREEN_HEIGHT - coffee_button_img.get_height() - 120)
     coffee_button_rect = coffee_button_img.get_rect(topleft=coffee_button_pos)
 
