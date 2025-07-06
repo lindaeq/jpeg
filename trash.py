@@ -187,7 +187,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             screen.blit(sparkle_img, sparkle_rect)
 
         if pieces_sorted_this_round == max_trash:
-            continue_text = small_pixel_font.render("press any key to return to cafe...", True, (255, 255, 255))
+            continue_text = small_pixel_font.render("press any key to return to the cafe...", True, (255, 255, 255))
             text_rect = continue_text.get_rect(center=(screen_width // 2, 540))
             screen.blit(continue_text, text_rect)
 

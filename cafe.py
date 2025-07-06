@@ -13,9 +13,8 @@ pygame.mixer.init()
 
 click_sound = pygame.mixer.Sound("sounds/click.mp3")
 sparkle_sound = pygame.mixer.Sound("sounds/sparkle.mp3")
-# Load and play background jazz music ONCE
-
 raccoon_sound = pygame.mixer.Sound("sounds/raccoon_sound.mp3")
+register_sound = pygame.mixer.Sound("sounds/register.mp3")  # NEW
 
 pygame.mouse.set_visible(False)  # Hide system mouse cursor
 
@@ -25,16 +24,22 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
 
     trash_can_img = pygame.image.load("images/cafe/trash_can.png").convert_alpha()
     coffee_button_img = pygame.image.load("images/cafe/button_coffee_machine.png").convert_alpha()
-    raccoon_img = pygame.image.load("images/cafe/raccoon.png").convert_alpha()
+    register_img = pygame.image.load("images/cafe/register.png").convert_alpha()  # NEW
+
+    raccoon_img1 = pygame.image.load("images/cafe/raccoon.png").convert_alpha()
+    raccoon_img2 = pygame.image.load("images/cafe/raccoon1.png").convert_alpha()
+    raccoon_img3 = pygame.image.load("images/cafe/raccoon2.png").convert_alpha()
+    raccoon_images = [raccoon_img1, raccoon_img2, raccoon_img3]
+
     dialogue_img = pygame.image.load("images/cafe/dialogue.png").convert_alpha()
     full_coffee_img = pygame.image.load("images/cafe/cup_full.png").convert_alpha()
-    sparkle_img = pygame.image.load("images/cafe/sparkle.png").convert_alpha()  # Sparkle image loaded
+    sparkle_img = pygame.image.load("images/cafe/sparkle.png").convert_alpha()
 
     scale_factor = 0.5
-    original_width = full_coffee_img.get_width()
-    original_height = full_coffee_img.get_height()
-    scaled_size = (int(original_width * scale_factor), int(original_height * scale_factor))
-    full_coffee_img = pygame.transform.smoothscale(full_coffee_img, scaled_size)
+    full_coffee_img = pygame.transform.smoothscale(
+        full_coffee_img,
+        (int(full_coffee_img.get_width() * scale_factor), int(full_coffee_img.get_height() * scale_factor))
+    )
 
     font = pygame.font.Font("fonts/pixel.ttf", 60)
     clock = pygame.time.Clock()
@@ -42,6 +47,8 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     trash_rect = trash_can_img.get_rect(topleft=(7.5, (SCREEN_HEIGHT - trash_can_img.get_height()) // 2 - 28))
     coffee_button_pos = (675, SCREEN_HEIGHT - coffee_button_img.get_height() - 120)
     coffee_button_rect = coffee_button_img.get_rect(topleft=coffee_button_pos)
+    register_pos = (SCREEN_WIDTH // 2 - register_img.get_width() // 2-94, SCREEN_HEIGHT - register_img.get_height()-127)
+    register_rect = register_img.get_rect(topleft=register_pos)
 
     coffee_served = 0
     full_cup_icon, counter_font = coffee.get_coffee_assets()
@@ -51,10 +58,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     if not hasattr(game_state, "raccoon_sliding_out"):
         game_state.raccoon_sliding_out = False
 
-    # UPDATED: Start 100px before middle, same target stopping point
     raccoon_x = (SCREEN_WIDTH // 2) - 100
     raccoon_y = SCREEN_HEIGHT // 4 - 25
-    raccoon_target_x = SCREEN_WIDTH * 0.57 - raccoon_img.get_width() // 2
+    raccoon_target_x = SCREEN_WIDTH * 0.57 - raccoon_img1.get_width() // 2
     raccoon_speed = 8
 
     raccoon_arrived = False
@@ -63,7 +69,6 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     dialogue_start_time = 0
 
     coffee_delivered = 0
-
     dragging_coffee = False
     drag_offset = (0, 0)
     dragged_coffee_pos = None
@@ -74,26 +79,24 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     coffee_icon_spacing = 10
     coffee_start_y = SCREEN_HEIGHT - 15
 
-    # Steam animation timer variables
-    steam_frame_interval = 500  # ms between frames
+    steam_frame_interval = 500
     last_steam_switch = pygame.time.get_ticks()
     current_background = background1
 
-    # Sparkle effect variables
     sparkle_active = False
     sparkle_start_time = 0
     sparkle_pos = (0, 0)
 
     pygame.mixer.music.load("sounds/jazz.wav")
-    pygame.mixer.music.play(-1)  # Loop forever
+    pygame.mixer.music.play(-1)
+
+    current_raccoon_img = random.choice(raccoon_images)
 
     while True:
         now = pygame.time.get_ticks()
-
         mouse_pos = pygame.mouse.get_pos()
         mouse_pressed = pygame.mouse.get_pressed()[0]
 
-        # Switch background for steam animation
         if now - last_steam_switch >= steam_frame_interval:
             current_background = background2 if current_background == background1 else background1
             last_steam_switch = now
@@ -105,21 +108,19 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 return "start"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if trash_rect.collidepoint(event.pos):
-                    click_sound.play()   # Play click sound on trash click
+                    click_sound.play()
                     pygame.mixer.music.stop()
                     return "click"
-
                 elif coffee_button_rect.collidepoint(event.pos):
-                    click_sound.play()   # Play click sound on coffee button click
-                    result, new_coffee_served, _ = coffee.run(
-                        screen, coffee_served, [], mouse_normal, mouse_clicked
-                    )
+                    click_sound.play()
+                    result, new_coffee_served, _ = coffee.run(screen, coffee_served, [], mouse_normal, mouse_clicked)
                     if result == "quit":
                         return "quit"
                     coffee_served = new_coffee_served
                     dragged_coffee_pos = None
                     dragged_coffee_index = None
-
+                elif register_rect.collidepoint(event.pos):  # NEW
+                    register_sound.play()
                 else:
                     pile_rects = []
                     for i in range(coffee_served):
@@ -129,29 +130,27 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                         pile_rects.append(rect)
                     for i, rect in enumerate(pile_rects):
                         if rect.collidepoint(event.pos) and coffee_served > 0:
-                            click_sound.play()  # Play click sound on coffee cup click
+                            click_sound.play()
                             dragging_coffee = True
                             dragged_coffee_pos = (rect.x, rect.y)
                             drag_offset = (event.pos[0] - rect.x, event.pos[1] - rect.y)
                             dragged_coffee_index = i
                             break
-
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if dragging_coffee:
                     dragging_coffee = False
-                    raccoon_rect = raccoon_img.get_rect(topleft=(raccoon_x, raccoon_y))
+                    raccoon_rect = current_raccoon_img.get_rect(topleft=(raccoon_x, raccoon_y))
                     coffee_rect = full_coffee_img.get_rect(topleft=dragged_coffee_pos)
                     if raccoon_rect.colliderect(coffee_rect):
                         coffee_delivered += 1
                         coffee_served -= 1
-
-                        # Start sparkle effect at center of raccoon, slightly adjusted
-                        sparkle_pos = (raccoon_rect.centerx - sparkle_img.get_width() // 2,
-                                       raccoon_rect.top - sparkle_img.get_height() // 2)
+                        sparkle_pos = (
+                            raccoon_rect.centerx - sparkle_img.get_width() // 2,
+                            raccoon_rect.top - sparkle_img.get_height() // 2,
+                        )
                         sparkle_active = True
                         sparkle_start_time = pygame.time.get_ticks()
                         sparkle_sound.play()
-
                         dragged_coffee_pos = None
                         dragged_coffee_index = None
                     else:
@@ -182,13 +181,13 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 coffee_served = 0
                 dragged_coffee_pos = None
                 dragged_coffee_index = None
-                raccoon_x = (SCREEN_WIDTH // 2) - 100  # Reset start pos again
+                raccoon_x = (SCREEN_WIDTH // 2) - 100
                 dialogue_start_time = 0
+                current_raccoon_img = random.choice(raccoon_images)
 
-        # Draw animated background (steam effect)
         screen.blit(current_background, (0, 0))
 
-        # Trash highlight
+        # Trash
         if trash_rect.collidepoint(mouse_pos):
             bright_trash = trash_can_img.copy()
             bright_trash.fill((40, 40, 40, 0), special_flags=pygame.BLEND_RGB_ADD)
@@ -196,7 +195,7 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         else:
             screen.blit(trash_can_img, trash_rect.topleft)
 
-        # Coffee machine highlight
+        # Coffee button
         if coffee_button_rect.collidepoint(mouse_pos):
             bright_button = coffee_button_img.copy()
             bright_button.fill((40, 40, 40, 0), special_flags=pygame.BLEND_RGB_ADD)
@@ -204,7 +203,15 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         else:
             screen.blit(coffee_button_img, coffee_button_rect.topleft)
 
-        # Draw coffee pile from bottom up (except dragged one)
+        # Register
+        if register_rect.collidepoint(mouse_pos):
+            bright_register = register_img.copy()
+            bright_register.fill((40, 40, 40, 0), special_flags=pygame.BLEND_RGB_ADD)
+            screen.blit(bright_register, register_rect.topleft)
+        else:
+            screen.blit(register_img, register_rect.topleft)
+
+        # Coffee pile
         for i in range(coffee_served):
             if dragging_coffee and i == dragged_coffee_index:
                 continue
@@ -212,23 +219,20 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             pos_y = coffee_start_y - (coffee_icon_height + coffee_icon_spacing) * i - coffee_icon_height
             screen.blit(full_cup_icon, (pos_x, pos_y))
 
-        # Draw raccoon behind dragged coffee
-        screen.blit(raccoon_img, (raccoon_x, raccoon_y))
+        # Raccoon
+        screen.blit(current_raccoon_img, (raccoon_x, raccoon_y))
 
-        # Draw dragged coffee ON TOP of raccoon
         if dragging_coffee and dragged_coffee_pos is not None:
-            screen.blit(full_cup_icon, dragged_coffee_pos)        
+            screen.blit(full_cup_icon, dragged_coffee_pos)
 
-        raccoon_rect = raccoon_img.get_rect(topleft=(raccoon_x, raccoon_y))
-
+        raccoon_rect = current_raccoon_img.get_rect(topleft=(raccoon_x, raccoon_y))
         highlight_raccoon = False
         if dragging_coffee and dragged_coffee_pos is not None:
             dragged_coffee_rect = full_coffee_img.get_rect(topleft=dragged_coffee_pos)
             if raccoon_rect.colliderect(dragged_coffee_rect):
                 highlight_raccoon = True
-
         if highlight_raccoon:
-            bright_raccoon = raccoon_img.copy()
+            bright_raccoon = current_raccoon_img.copy()
             bright_raccoon.fill((40, 40, 40, 0), special_flags=pygame.BLEND_RGB_ADD)
             screen.blit(bright_raccoon, (raccoon_x, raccoon_y))
 
@@ -239,11 +243,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         if dialogue_visible and not game_state.raccoon_sliding_out:
             dialogue_rect = dialogue_img.get_rect(topright=(SCREEN_WIDTH - 20, 0))
             screen.blit(dialogue_img, dialogue_rect)
-
             icon_x = dialogue_rect.left + 60
             icon_y = dialogue_rect.centery - full_coffee_img.get_height() // 2 + 5
             screen.blit(full_coffee_img, (icon_x, icon_y))
-
             if game_state.coffee_offer_number is not None:
                 number_text = font.render(f"X {game_state.coffee_offer_number}", True, (0, 0, 0))
                 text_x = icon_x + full_coffee_img.get_width() + 15
@@ -258,17 +260,14 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
             game_state.raccoon_sliding_out = True
             dialogue_visible = False
 
-        # Custom mouse cursor
         if mouse_normal and mouse_clicked:
             if mouse_pressed:
                 screen.blit(mouse_clicked, mouse_pos)
             else:
                 screen.blit(mouse_normal, mouse_pos)
 
-        # Draw sparkle ON TOP OF EVERYTHING for 1 second
         if sparkle_active:
-            now = pygame.time.get_ticks()
-            if now - sparkle_start_time <= 1000:  # 1000 ms = 1 second
+            if now - sparkle_start_time <= 1000:
                 screen.blit(sparkle_img, sparkle_pos)
             else:
                 sparkle_active = False
@@ -276,12 +275,10 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         pygame.display.flip()
         clock.tick(60)
 
-
 if __name__ == "__main__":
     mouse_normal = pygame.image.load("images/mouse_normal.png").convert_alpha()
     mouse_clicked = pygame.image.load("images/mouse_clicked.png").convert_alpha()
     pygame.mouse.set_visible(False)
-
     result = run(screen, mouse_normal, mouse_clicked)
     print("Returned:", result)
     pygame.quit()

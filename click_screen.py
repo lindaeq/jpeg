@@ -16,10 +16,13 @@ TRASH_IMAGES = {
     "trash3": pygame.image.load("images/click_screen/trash3.png")
 }
 
+# Load back arrow image
+arrow_img = pygame.image.load("images/click_screen/arrow.png").convert_alpha()
+arrow_margin = 20
+arrow_rect = arrow_img.get_rect(topleft=(arrow_margin, 600 - arrow_img.get_height() - arrow_margin))
+
 magnify_factor = 1.2
 TRASH_SCALED = {}
-
-# Scale all trash images once
 for key, img in TRASH_IMAGES.items():
     original_size = img.get_size()
     scaled_size = (int(original_size[0] * magnify_factor), int(original_size[1] * magnify_factor))
@@ -33,11 +36,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     small_font = pygame.font.Font("fonts/pixel_2.ttf", 36)
     clock = pygame.time.Clock()
 
-    # Start looping background music
     pygame.mixer.music.load("sounds/buzz.wav")
     pygame.mixer.music.play(-1)
 
-    # Define spawn area
     box_margin_x = 100
     box_margin_bottom = 150
     box_margin_top = 150
@@ -45,12 +46,9 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     box_height = screen.get_height() - box_margin_bottom - box_margin_top
     spawn_area = pygame.Rect(box_margin_x, box_margin_top, box_width, box_height)
 
-    # Determine total number of trash items
     total_trash_items = random.randint(3, 8)
     types = ["trash1", "trash2", "trash3"]
     counts = [0, 0, 0]
-
-    # Randomly assign total_trash_items into the three categories
     for _ in range(total_trash_items):
         choice = random.choice([0, 1, 2])
         counts[choice] += 1
@@ -60,7 +58,6 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
     max_attempts = 500
     spacing = 5
 
-    # Spawn trash items with rotation
     for i, count in enumerate(counts):
         trash_type = types[i]
         for _ in range(count):
@@ -96,6 +93,10 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
                 if show_continue_text:
                     return "trash"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if arrow_rect.collidepoint(mouse_pos):
+                    click_sound.play()
+                    return "cafe"
+
                 for trash in trash_items[:]:
                     if trash["rect"].collidepoint(mouse_pos):
                         trash_items.remove(trash)
@@ -116,13 +117,15 @@ def run(screen, mouse_normal=None, mouse_clicked=None):
         for trash in trash_items:
             screen.blit(trash["img"], trash["rect"])
 
+        # Arrow back button
+        screen.blit(arrow_img, arrow_rect.topleft)
+
         # Continue message
         if show_continue_text:
             continue_text = small_font.render("press any key to continue...", True, (255, 255, 255))
             text_rect = continue_text.get_rect(center=(screen.get_width() // 2, 200))
             screen.blit(continue_text, text_rect)
 
-        # Custom cursor
         if mouse_normal and mouse_clicked:
             screen.blit(mouse_clicked if mouse_pressed else mouse_normal, mouse_pos)
 
