@@ -1,4 +1,4 @@
-# 🦝 Raccoon Café: Brew & Serve ☕
+# 🦝 Brew & Serve ☕
 
 Welcome to **Raccoon Café**, a cozy pixel-art game where you're the barista at the cutest café in town — and your customers? Adorable raccoons with a serious love for coffee!
 
