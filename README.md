@@ -41,44 +41,11 @@ Each raccoon appears with a random coffee order (1–3 cups). Serve them right, 
    pip install pygame
 Run the game from your terminal or IDE:
    python main.py
-
-Your folders should look like this:
-
-/raccoon-cafe/
-├── main.py
-├── cafe.py
-├── coffee.py
-├── game_state.py
-├── images/
-│   ├── cafe/
-│   │   ├── cafe.png
-│   │   ├── cafe1.png
-│   │   ├── raccoon.png
-│   │   ├── raccoon1.png
-│   │   ├── raccoon2.png
-│   │   ├── trash_can.png
-│   │   ├── register.png
-│   │   ├── button_coffee_machine.png
-│   │   ├── cup_full.png
-│   │   ├── dialogue.png
-│   └── mouse_normal.png
-│   └── mouse_clicked.png
-├── sounds/
-│   ├── click.mp3
-│   ├── sparkle.mp3
-│   ├── raccoon_sound.mp3
-│   ├── register.mp3
-│   └── jazz.wav
-├── fonts/
-│   └── pixel.ttf
-
-
 ---
 
 ## ⚠️ Challenges
 
 - **Custom mouse cursor**: Hiding the default system cursor and replacing it with a responsive pixel-art one was tricky, especially when syncing click states.
-- **Sprite layering**: Ensuring that the dragged coffee cup renders **above** the raccoon, while the coffee pile renders **behind**, required careful draw order control.
 - **Raccoon sprite randomness**: The raccoon now randomly selects one of three sprites each time it enters, instead of changing unpredictably mid-game.
 - **Smooth transitions**: Creating believable movement for the raccoon entering and exiting the café, while syncing sound and dialogue timing.
 - **Polishing interactions**: Adding sound, hover effects, and click feedback for the register, coffee machine, and trash can — all while keeping things intuitive and cute.
