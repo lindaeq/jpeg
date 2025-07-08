@@ -39,8 +39,10 @@ Each raccoon appears with a random coffee order (1–3 cups). Serve them right, 
 2. Install Pygame by running:
    ```bash
    pip install pygame
-Run the game from your terminal or IDE:
+3. Run the game from your terminal or IDE:
+   ```bash
    python main.py
+   
 ---
 
 ## ⚠️ Challenges
